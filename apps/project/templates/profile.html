@@ -1,0 +1,39 @@
+[[extend 'layout.html']]
+
+<style>.enable-line-break{white-space:pre-line;}</style>
+
+<div class="section">
+    [[for row in rows:]]
+    <div class = "container block">
+        <div class = "tile is-ancestor">
+            <div class = "tile is-parent">
+                <div class = "tile is-child has-text-right">
+                    <a class="button" style="float:right;" href="[[=URL('index')]]">
+                        <span>Dashboard</span>
+                    </a>
+                </div> 
+            </div>
+            <div class = "tile is-parent is-8 enable-line-break is-vertical">
+                <h1 class = "title">[[=row.first_name]] [[=row.last_name]]</h1>
+                <div class="tile is-child"><h1>Hardiness Zone: [[=row.hardiness_zone]]
+                    [[=row.description]]</h1></div>
+                <div class="tile is-child">
+                    <h1>These will be posts</h1>
+                </div>
+            </div>
+            <div class = "tile is-parent">
+                <a class="button" href="[[=URL('edit_profile', row.id, signer=url_signer)]]">
+                    <span class="icon"><i class="fa fa-fw fa-cog"></i></span>
+                </a>
+            </div>
+        </div>
+        <div class = "tile is-ancestor">
+            <div class = "tile is-parent"></div>
+            <div class = "tile is-parent has-text-left is-8">
+                
+            </div>
+            <div class = "tile is-parent"></div>
+        </div>
+    </div>
+    [[pass]]
+</div>
