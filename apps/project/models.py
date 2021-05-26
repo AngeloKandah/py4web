@@ -38,7 +38,7 @@ db.define_table(
     'posts',
     Field('user', 'reference users'),
     Field('email', default=get_user_email()),
-    Field('first_name'),
+    Field('first_name',),
     Field('last_name'),
     Field('post', requires = IS_NOT_EMPTY()),
 )
@@ -46,11 +46,17 @@ db.define_table(
 db.define_table(
     'likes',
     Field('post', 'reference posts'),
-    Field('rater', default=get_user_email()),
+    Field('rater', 'reference users'),
     Field('first_name'),
     Field('last_name'),
     Field('like', 'boolean', default = False),
     Field('dislike', 'boolean', deafult = False)
+)
+
+db.define_table(
+    'followers',
+    Field('follower', 'reference users'),
+    Field('following', 'reference users'),
 )
 
 db.users.user_email.readable = db.users.user_email.writable = False

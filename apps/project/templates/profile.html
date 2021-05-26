@@ -1,39 +1,121 @@
 [[extend 'layout.html']]
 
-<style>.enable-line-break{white-space:pre-line;}</style>
+<style>
+    .enable-line-break {
+        white-space: pre-line;
+    }
+</style>
 
-<div class="section">
-    [[for row in rows:]]
-    <div class = "container block">
-        <div class = "tile is-ancestor">
-            <div class = "tile is-parent">
-                <div class = "tile is-child has-text-right">
+<style>
+    [v-cloak] {
+        display: none;
+    }
+</style>
+
+<div class="section" id="vue-target" v-cloak>
+    [[for row in rowss:]]
+    <div class="container block">
+        <div class="tile is-ancestor">
+            <div class="tile is-parent">
+                <div class="tile is-child has-text-right">
                     <a class="button" style="float:right;" href="[[=URL('index')]]">
                         <span>Dashboard</span>
                     </a>
-                </div> 
-            </div>
-            <div class = "tile is-parent is-8 enable-line-break is-vertical">
-                <h1 class = "title">[[=row.first_name]] [[=row.last_name]]</h1>
-                <div class="tile is-child"><h1>Hardiness Zone: [[=row.hardiness_zone]]
-                    [[=row.description]]</h1></div>
-                <div class="tile is-child">
-                    <h1>These will be posts</h1>
                 </div>
             </div>
-            <div class = "tile is-parent">
-                <a class="button" href="[[=URL('edit_profile', row.id, signer=url_signer)]]">
+            <div class="tile is-parent is-8 is-vertical">
+                <h1 class="title">[[=row.first_name]] [[=row.last_name]]</h1>
+                <div class="tile is-child">
+                    <h1>Hardiness Zone: [[=row.hardiness_zone]]
+                        <span v-if="profile">
+                            <button @click="set_add_status(true)" class="button is-primary" style="float:right">
+                                <i class="fa fa-plus fa-fw"></i>
+                            </button>
+                        </span>
+                        <span v-if="!profile">
+                            <button @click="add_follower(true, page_id)" class="button is-primary" style="float:right">
+                                <i class="fa fa-user-plus"></i><span>&nbsp;Follow</span>
+                            </button>
+                        </span>
+                        <div>[[=row.description]]</div>
+                    </h1>
+                </div>
+                <div v-if="add_mode" class="tile is-child">
+                    <div class="form">
+                        <div class="field">
+                            <textarea class="textarea" placeholder="Enter new post here" v-model="add_post"></textarea>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <input type="submit" @click="add_posts" value="Post" class="button is-primary">
+                                <input type="submit" @click="set_add_status(false)" value="Cancel"
+                                    class="button is-warning">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile is-child box" style="background-color:rgba(224,224,224,0.418)"
+                    v-for="r in rows.slice().reverse()">
+                    <p class="has-text-black">{{r.post}}</p>
+                    <p class="has-text-grey">{{r.first_name}} {{r.last_name}}</p>
+
+                    <span @mouseout="clear_names(r._idx)" style="color:rgba(1, 65, 161, 0.63)">
+                        <span @mouseover="check_likes(r._idx)" @click="set_likes(r._idx)">
+                            <i class="fa fa-2x fa-flip-horizontal"
+                                :class="{'fa-thumbs-o-up':!r._like, 'fa-thumbs-up':r._like}"></i>
+                        </span>
+                        <span @mouseover="check_dislikes(r._idx)" @click="set_dislikes(r._idx)">
+                            <i class="fa fa-2x"
+                                :class="{'fa-thumbs-o-down':!r._dislike, 'fa-thumbs-down':r._dislike}"></i>
+                        </span>
+                    </span>
+
+                    <span v-if="r.lhover" style="color:rgba(1, 65, 161, 0.63)">
+                        {{r._lname}}
+                    </span>
+                    <span v-if="r.dhover" style="color:rgba(1, 65, 161, 0.63)">
+                        {{r._dname}}
+                    </span>
+                    <span v-if="r.email === cur_user">
+                        <button @click="delete_posts(r._idx)" class="button is-danger" style="float:right;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <div class="tile is-parent">
+                <a v-if="profile" class="button" href="[[=URL('edit_profile', row.id, signer=url_signer)]]">
                     <span class="icon"><i class="fa fa-fw fa-cog"></i></span>
                 </a>
             </div>
         </div>
-        <div class = "tile is-ancestor">
-            <div class = "tile is-parent"></div>
-            <div class = "tile is-parent has-text-left is-8">
-                
+        <div class="tile is-ancestor">
+            <div class="tile is-parent"></div>
+            <div class="tile is-parent has-text-left is-8">
+
             </div>
-            <div class = "tile is-parent"></div>
+            <div class="tile is-parent"></div>
         </div>
     </div>
     [[pass]]
 </div>
+
+[[block page_scripts]]
+
+<script>
+    let add_post_url = "[[=XML(add_post_url)]]";
+    let load_posts_url = "[[=XML(load_posts_url)]]";
+    let delete_post_url = "[[=XML(delete_post_url)]]";
+    let load_likes_url = "[[=XML(load_likes_url)]]";
+    let get_likes_url = "[[=XML(get_likes_url)]]";
+    let get_dislikes_url = "[[=XML(get_dislikes_url)]]";
+    let follow_url = "[[=XML(follow_url)]]";
+
+    let cur_user = "[[ =cur_user ]]";
+    let cur_user_name = "[[ =cur_user_name ]]";
+    let cur_user_id = "[[ =cur_user_id ]]";
+    let page_id = "[[ =page_id ]]";
+</script>
+<script src="js/profile.js"></script>
+[[end]]

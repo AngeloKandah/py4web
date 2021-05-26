@@ -1,7 +1,7 @@
 // This will be the object that will contain the Vue attributes
 // and be used to initialize it.
 let app = {};
-let search = {};
+
 
 // Given an empty app object, initializes it filling its attributes,
 // creates a Vue instance, and then initializes the Vue instance.
@@ -9,11 +9,9 @@ let init = (app) => {
 
     // This is the Vue data.
     app.data = {
-        query: "",
-        results: [],
-
         add_mode: false,
         delete_post: false,
+        profile: false,
         add_post: "",
         rows: [],
         l_rows: [],
@@ -162,9 +160,18 @@ let init = (app) => {
         app.vue.add_mode = new_status;
     };
 
+    app.add_follower = function (new_status, page_id) {
+        console.log(new_status, page_id)
+        axios.post(follow_url, {follow: new_status, page_id: page_id});
+    };
+
     app.check_owner = function () {
         app.vue.cur_user = cur_user;
         app.vue.cur_user_id = cur_user_id;
+        app.vue.page_id = page_id;
+        if(app.vue.page_id == app.vue.cur_user_id){
+            app.vue.profile = true;
+        }
     }
 
     app.clear_names = function (row_id) {
@@ -184,33 +191,22 @@ let init = (app) => {
                     if(l[i].dislike === true && l[i].rater == cur_user_id){
                         r[j]._dislike = true;
                     }
-                }
-            }
-        }
-    }
-
-    app.search = function () {
-        if (app.vue.query.length > 1) {
-            axios.get(search_url, {params: {q: app.vue.query}})
-                .then(function (result) {
-                    app.vue.results = result.data.results;
-                });
-        } else {
-            app.vue.results = [];
-        }
-    }
+                };
+            };
+        };
+    };
 
     // This contains all the methods.
     app.methods = {
         // Complete as you see fit.
-        search: app.search,
         set_likes: app.set_likes,
         set_dislikes: app.set_dislikes,
+        add_follower: app.add_follower,
 
         clear_names: app.clear_names,
         check_likes: app.check_likes,
         check_dislikes: app.check_dislikes,
-        
+
         check_owner: app.check_owner,
         add_posts: app.add_posts,
         set_add_status: app.set_add_status,
@@ -247,4 +243,3 @@ let init = (app) => {
 // This takes the (empty) app object, and initializes it,
 // putting all the code i
 init(app);
-

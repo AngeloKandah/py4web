@@ -32,6 +32,8 @@ from .models import get_user_email
 from py4web.utils.form import Form, FormStyleBulma
 from pydal.validators import *
 
+import uuid
+import random
 
 url_signer = URLSigner(session)
 
@@ -40,20 +42,21 @@ url_signer = URLSigner(session)
 def index():
     if get_user_email() is None:
         redirect(URL('auth/login'))
-    rows = db(db.auth_user.email == get_user_email()).select().first()
     user = db(db.users.user_email == get_user_email()).select().first()
     if user is None:
         redirect(URL('create_profile'))
     return dict(
         url_singer=url_signer,
-        load_posts_url = URL('load_posts', signer=url_signer),
+        load_posts_url = URL('load_posts',user.id, signer=url_signer),
         add_post_url = URL('add_posts', signer=url_signer),
         delete_post_url = URL('delete_posts', signer=url_signer),
         load_likes_url = URL('load_likes', signer=url_signer),
         get_likes_url = URL('get_likes', signer=url_signer),
         get_dislikes_url = URL('get_dislikes', signer=url_signer),
+        search_url = URL('search', signer=url_signer),
+
         cur_user = get_user_email(),
-        cur_user_name = rows.first_name + " " + rows.last_name,
+        cur_user_name = user.first_name + " " + user.last_name,
         cur_user_id = user.id,
     )
 
@@ -61,11 +64,43 @@ def index():
 @action.uses(db, session, auth.user, url_signer, 'profile.html')
 def profile(users_id=None):
     assert users_id is not None
-    rows = db(db.users.user_email == get_user_email()).select()
-    if len(rows) == 0:
-        redirect(URL('create_profile'))
     #to grab user do, rows[0]
-    return dict(rows=rows,url_signer=url_signer)
+    #print(rows.first_name)
+    user = db(db.users.user_email == get_user_email()).select().first()
+    if(users_id != user.id):
+        rowss = db(db.users.id == users_id).select()
+        return dict(
+            rowss=rowss,
+            url_signer=url_signer,
+            load_posts_url = URL('load_user_posts', users_id, signer=url_signer),
+            add_post_url = URL('add_posts', signer=url_signer),
+            delete_post_url = URL('delete_posts', signer=url_signer),
+            load_likes_url = URL('load_likes', signer=url_signer),
+            get_likes_url = URL('get_likes', signer=url_signer),
+            get_dislikes_url = URL('get_dislikes', signer=url_signer),
+            follow_url = URL('follow', signer=url_signer),
+            cur_user = get_user_email(),
+            cur_user_name = user.first_name + " " + user.last_name,
+            cur_user_id = user.id,
+            page_id = users_id
+        )
+    else:
+        rowss = db(db.users.user_email == get_user_email()).select()
+        return dict(
+            rowss=rowss,
+            url_signer=url_signer,
+            load_posts_url = URL('load_user_posts', user.id, signer=url_signer),
+            add_post_url = URL('add_posts', signer=url_signer),
+            delete_post_url = URL('delete_posts', signer=url_signer),
+            load_likes_url = URL('load_likes', signer=url_signer),
+            get_likes_url = URL('get_likes', signer=url_signer),
+            get_dislikes_url = URL('get_dislikes', signer=url_signer),
+            follow_url = URL('follow', signer=url_signer),
+            cur_user = get_user_email(),
+            cur_user_name = user.first_name + " " + user.last_name,
+            cur_user_id = user.id,
+            page_id = user.id,
+        )
 
 @action('edit_profile/<users_id:int>', method=["GET", "POST"])
 @action.uses(db, session, auth.user, url_signer.verify(),'edit_profile.html')
@@ -78,6 +113,22 @@ def edit_profile(users_id=None):
         redirect(URL('index'))
     form = Form(db.users, record=row, deletable=False, csrf_session=session, formstyle=FormStyleBulma)
     if form.accepted:
+        previous = db(db.posts.user == users_id).select().as_list()
+        previous_l = db(db.likes.rater == users_id).select().as_list()
+        user = db(db.users.id == users_id).select().first()
+        for id in previous:
+            db.posts.update_or_insert(
+                (db.posts.id == id["id"]),
+                user=users_id,
+                first_name = user.first_name,
+                last_name = user.last_name,
+            )
+        for id in previous_l:
+            db.likes.update_or_insert(
+                (db.likes.id == id["id"]),
+                first_name = user.first_name,
+                last_name = user.last_name,
+            )
         redirect(URL('profile', users_id))
     return dict(form=form)
 
@@ -89,12 +140,33 @@ def create_profile():
         redirect(URL('index'))
     return dict(form=form)
 
-@action('load_posts')
+@action('load_posts/<users_id:int>')
 @action.uses(url_signer.verify(), db)
-def load_posts():
-    rows = db(db.posts).select().as_list()
+def load_posts(users_id=None):
+    follows = db(db.followers.follower == users_id).select().as_list()
+    x = []
+    for follow in follows:
+        x.append(follow["following"])
+
+    rows = []
+    rows += db(db.posts.email==get_user_email()).select().as_list()
+    if len(follows) != 0:
+        for z in range(len(x)):
+            rows += db((db.posts.user == x[z])).select().as_list()
+
+    def sortPost(r):
+        return r['id']
+        
+    rows.sort(key=sortPost)
     l_rows = db(db.likes).select().as_list()
     return dict(rows=rows, l_rows=l_rows)
+
+@action('load_user_posts/<users_id:int>')
+@action.uses(url_signer.verify(), db)
+def load_user_posts(users_id=None):
+    posts = db(db.posts.user == users_id).select().as_list()
+    liked = db(db.likes).select().as_list()
+    return dict(rows=posts,l_rows=liked)
 
 @action('add_posts', method="POST")
 @action.uses(url_signer.verify(), db)
@@ -114,14 +186,14 @@ def add_post():
 @action('load_likes', method="POST")
 @action.uses(url_signer.verify(), db)
 def load_likes():
-    rows = db(db.auth_user.email == get_user_email()).select().first()
+    rows = db(db.users.user_email == get_user_email()).select().first()
     post = request.json.get('post')
     like = request.json.get('like')
     dislike = request.json.get('dislike')
     db.likes.update_or_insert(
-        ((db.likes.rater == get_user_email()) & (post == db.likes.post)),
+        ((db.likes.rater == rows.id) & (post == db.likes.post)),
         post=post,
-        rater=get_user_email(),
+        rater=rows.id,
         first_name=rows.first_name,
         last_name=rows.last_name,
         like=like,
@@ -158,6 +230,7 @@ def get_dislikes():
             dislikes += row.first_name +  " " + row.last_name
             i = 1
         else:
+    
             dislikes += ", " + row.first_name +  " " + row.last_name + " "
     if dislikes == 'Disliked by ':
         dislikes = ''
@@ -171,3 +244,21 @@ def delete_posts():
     db(db.posts.id == id).delete()
     return "ok"
 
+@action('search')
+@action.uses()
+def search():
+    q = request.params.get("q")
+    users = db((db.users.first_name == q) | (db.users.last_name == q) | (db.users.first_name + " " + db.users.last_name == q)).select().as_list()
+    return dict(results=users)
+
+@action('follow', method="POST")
+@action.uses(url_signer.verify(), db)
+def follow():
+    follow = request.json.get('follow')
+    page_id = request.json.get('page_id')
+    if(follow==True):
+        db.followers.update_or_insert(
+            follower=db(db.users.user_email == get_user_email()).select().first(),
+            following=page_id,
+        )
+    return "ok"
