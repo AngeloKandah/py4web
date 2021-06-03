@@ -30,16 +30,21 @@ db.define_table(
     Field('first_name', requires=IS_NOT_EMPTY()),
     Field('last_name', requires=IS_NOT_EMPTY()),
     Field('hardiness_zone', requires=IS_NOT_EMPTY()),
+    Field('picture', 'text'),
     Field('description'),
-    #Field('profile_pic', 'upload', uploadfolder=os.path.join(settings.STATIC_FOLDER,'profile_pic/')),#download_url= [=URL('static/profile_pic/users.profile_pic.b4a46652577cfb01.TWFyY2gxNy5qcGc=.jpg')])
 )
+
+db.users.user_email.readable = db.users.user_email.writable = False
+db.users.id.readable = db.users.id.writable = False
+db.users.picture.readable = db.users.picture.writable = False
 
 db.define_table(
     'posts',
     Field('user', 'reference users'),
     Field('email', default=get_user_email()),
-    Field('first_name',),
+    Field('first_name'),
     Field('last_name'),
+    Field('picture', 'text'),
     Field('post', requires = IS_NOT_EMPTY()),
 )
 
@@ -59,7 +64,15 @@ db.define_table(
     Field('following', 'reference users'),
 )
 
-db.users.user_email.readable = db.users.user_email.writable = False
-db.users.id.readable = db.users.id.writable = False
+db.define_table(
+    'comments',
+    Field('user', 'reference users'),
+    Field('post', 'reference posts'),
+    Field('email',defaul=get_user_email()),
+    Field('first_name'),
+    Field('last_name'),
+    Field('picture', 'text'),
+    Field('comment', requires = IS_NOT_EMPTY()),
+)
 
 db.commit()
