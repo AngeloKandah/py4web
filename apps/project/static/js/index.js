@@ -1,7 +1,6 @@
 // This will be the object that will contain the Vue attributes
 // and be used to initialize it.
 let app = {};
-let search = {};
 
 // Given an empty app object, initializes it filling its attributes,
 // creates a Vue instance, and then initializes the Vue instance.
@@ -9,6 +8,7 @@ let init = (app) => {
 
     // This is the Vue data.
     app.data = {
+        tags_query: false,
         query: "",
         results: [],
 
@@ -335,7 +335,7 @@ let init = (app) => {
     //Search function
     app.search = function () {
         if (app.vue.query.length > 1) {
-            axios.get(search_url, {params: {q: app.vue.query}})
+            axios.get(search_url, {params: {q: app.vue.query, tags:app.vue.tags_query}})
                 .then(function (result) {
                     app.vue.results = result.data.results;
                 });
@@ -344,10 +344,15 @@ let init = (app) => {
         }
     }
 
+    app.change_query = function () {
+        app.vue.tags_query = !app.vue.tags_query;
+    }
+
     // This contains all the methods.
     app.methods = {
         // Complete as you see fit.
         search: app.search,
+        change_query: app.change_query,
 
         set_likes: app.set_likes,
         set_dislikes: app.set_dislikes,

@@ -208,17 +208,17 @@
             </div>
             <div class="tile is-parent is-vertical is-2">
                <div>
-                  <input type="checkbox" @click="">
-                  Tags&nbsp;
-                  <input type="checkbox" @click="">
-                  Users
+                  <input type="checkbox" @click="change_query()">
+                  Tags
                </div>
                <div class="control block">
                   <input class="input" type="text" v-model="query" @keyup="search" placeholder="Search" />
                </div>
                <div class="tile is-child is-12" v-for="r in results">
-                  <img :src="r.picture" style="max-width: 40px;max-height: 40px;">
-                  <a v-bind:href="'[[=URL()]]profile/' + r.id">{{r.name}}</a>
+                  <div class="tile">
+                     <img :src="r.picture" style="max-width: 40px;max-height: 40px;">
+                     <a v-bind:href="'[[=URL()]]profile/' + r.id">{{r.name}}</a>
+                  </div>
                </div>
             </div>
          </div>

@@ -382,18 +382,29 @@ def delete_comments():
 @action('search')
 @action.uses()
 def search():
+    tags = request.params.get("tags")
     q = request.params.get("q")
-    first = db(db.users.first_name).select().as_list()
-    names = []
-    for firs in first:
-        if re.search(q,firs["first_name"] + " " + firs["last_name"]):
-            name = {
-                'id': firs["id"],
-                'name': firs["first_name"] + " " + firs["last_name"],
-                'picture': firs["picture"],
-            }
-            names.append(name)
-    return dict(results=names)
+    results = []
+    if tags == "true":
+        posts = db(db.posts.tags).select().as_list()
+        for p in posts:
+            if re.search(q, p['tags']):
+                post = {
+                    'id': p['user'],
+                    'name': p['post'],
+                }
+                results.append(post)
+    else:
+        first = db(db.users.first_name).select().as_list()
+        for f in first:
+            if re.search(q.upper().lower(), f["first_name"].upper().lower() + " " + f["last_name"].upper().lower()):
+                name = {
+                    'id': f["id"],
+                    'name': f["first_name"] + " " + f["last_name"],
+                    'picture': f["picture"],
+                }
+                results.append(name)
+    return dict(results=results)
 
 @action('follow', method="POST")
 @action.uses(url_signer.verify(), db)
