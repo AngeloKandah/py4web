@@ -12,6 +12,7 @@ let init = (app) => {
         add_mode: false,
         add_comment_mode: false,
         delete_post: false,
+
         profile: false,
         following: false,
 
@@ -19,22 +20,23 @@ let init = (app) => {
         show_likes: false,
 
         add_post: "",
+        add_tags: "",
         add_comment: "",
         cur_user_name: "",
-
-        num_followers: 0,
-        num_following: 0,
+        post_image: [],
 
         names: [],
         show_modal: false,
+        type: "",
 
         show_followers_modal: false,
         show_following_modal: false,
         followers_list: [],
         following_list: [],
+        num_followers: 0,
+        num_following: 0,
 
-        show_follow: false,
-        type: "",
+        user_info: [],
 
         rows: [],
         comments: [],
@@ -52,6 +54,7 @@ let init = (app) => {
         return a;
     };
 
+    //Completes the information about the posts, preloads information
     app.complete = (a) => {
         a.map((e) => {
             e._like = false;
@@ -59,39 +62,27 @@ let init = (app) => {
             e.commenting = false;
             e._lname = [];
             e._dname = [];
-            e.comments = [],
+            e.image = [];
+            e.comments = [];
             e._lnum = 0;
             e._dnum = 0;
         });
         return a;
     };
 
-    app.upload_file = function (event) {
-        let input = event.target;
-        let file = input.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.addEventListener("load", function () {
-                axios.post(upload_profilepic_url,
-                    {
-                        picture: reader.result,
-                        users_id: cur_user_id
-                    }).then(function () {
-
-                    });
-            });
-            reader.readAsDataURL(file);
-        }
-    }
-
+    //Area for posts functions
     app.add_posts = function () {
         axios.post(add_post_url,
             {
                 post: app.vue.add_post,
+                tags: app.vue.add_tags,
+                image: app.vue.post_image,
             }).then(function (response) {
                 app.vue.rows.push({
                     id: response.data.id,
                     post: app.vue.add_post,
+                    tags: app.vue.add_tags,
+                    image: app.vue.post_image,
                     first_name: response.data.first_name,
                     last_name: response.data.last_name,
                     picture: response.data.picture,
@@ -111,6 +102,55 @@ let init = (app) => {
             });
     };
 
+    app.reset_form = function () {
+        app.vue.add_post = "";
+        app.vue.add_tags = "";
+        app.vue.post_image = [];
+    };
+
+    app.set_add_status = function (new_status) {
+        app.reset_form();
+        app.vue.add_mode = new_status;
+    };
+
+    app.upload_post_image = function (event) {
+        let input = event.target;
+        let file = input.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.addEventListener("load",function () {
+                app.vue.post_image.push(reader.result);
+            });
+            reader.readAsDataURL(file);
+        }
+    }
+
+    app.set_images = function () {
+        for(let i = 0; i < app.vue.images.length; i++){
+            for(let j = 0; j < app.vue.rows.length; j++){
+                if(app.vue.images[i].post == app.vue.rows[j].id){
+                    app.vue.rows[j].image.push(app.vue.images[i].image)
+                    break;
+                }
+            }
+        }
+    }
+
+    app.delete_posts = function (row_idx) {
+        let id = app.vue.rows[row_idx].id;
+        axios.get(delete_post_url, { params: { id: id } }).then(function (response) {
+            for (let i = 0; i < app.vue.rows.length; i++) {
+                if (app.vue.rows[i].id === id) {
+                    app.vue.rows.splice(i, 1);
+                    app.enumerate(app.vue.rows);
+                    app.check();
+                    break;
+                }
+            }
+        });
+    };
+
+    //Area for comments functions
     app.add_comments = function (row_id, post) {
         axios.post(add_comment_url,
             {
@@ -164,39 +204,7 @@ let init = (app) => {
         });
     };
 
-    app.delete_posts = function (row_idx) {
-        let id = app.vue.rows[row_idx].id;
-        axios.get(delete_post_url, { params: { id: id } }).then(function (response) {
-            for (let i = 0; i < app.vue.rows.length; i++) {
-                if (app.vue.rows[i].id === id) {
-                    app.vue.rows.splice(i, 1);
-                    app.enumerate(app.vue.rows);
-                    app.check();
-                    break;
-                }
-            }
-        });
-    };
-
-    app.reset_form = function () {
-        app.vue.add_post = "";
-    };
-
-    app.set_add_status = function (new_status) {
-        app.vue.add_mode = new_status;
-    };
-
-    app.show_names = function (type, row_id) {
-        app.vue.show_modal = true;
-        app.vue.type = type;
-        if (type === "liked") {
-            app.vue.names = app.vue.rows[row_id]._lname
-        }
-        else {
-            app.vue.names = app.vue.rows[row_id]._dname
-        }
-    }
-
+    //Area for following/followers information
     app.close_modal = function () {
         app.vue.show_modal = false;
         app.vue.show_followers_modal = false;
@@ -212,26 +220,62 @@ let init = (app) => {
         app.vue.show_following_modal = new_status;    
     }
 
+    app.get_followers = function () {
+        app.vue.followers_list = app.vue.follows
+        app.vue.num_followers = app.vue.follows.length;
+        
+        app.vue.following_list = app.vue.lfollowing;
+        app.vue.num_following = app.vue.lfollowing.length;
+    }
+
+    app.add_follower = function (new_status, page_id) {
+        if (new_status == true) {
+            app.vue.following = true;
+        }
+        else {
+            app.vue.following = false;
+        }
+        axios.post(follow_url, { follow: new_status, page_id: page_id });
+    };
+
+    //Area for profile post filtering
     app.set_show_post = function (new_status) {
         app.vue.show_post = new_status;
         app.vue.show_likes = !new_status;
         app.vue.rows = app.vue.user_posts;
+        app.get_likes()
+        app.check()
     }
 
     app.set_show_likes = function (new_status) {
         app.vue.show_likes = new_status;
         app.vue.show_post = !new_status;
         app.vue.rows = app.vue.liked_posts;
+        app.get_likes()
         app.check()
     }
 
-    app.get_followers = function () {
-        app.vue.followers_list = app.vue.follows
-        app.vue.num_followers = app.vue.follows.length;
-        app.vue.following_list = app.vue.lfollowing;
-        app.vue.num_following = app.vue.lfollowing.length;
+    //Function for changing profile image
+    app.upload_file = function (event) {
+        let input = event.target;
+        let file = input.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.addEventListener("load", function () {
+                axios.post(upload_profilepic_url,
+                    {
+                        picture: reader.result,
+                        users_id: cur_user_id
+                    }).then(function () {
+
+                    });
+            });
+            reader.readAsDataURL(file);
+        }
+        window.location.reload();
     }
 
+    //Area for likes functions
     app.get_likes = function () {
         for (let i = 0; i < app.vue.l_rows.length; i++) {
             axios.get(get_likes_url, { params: { id: app.vue.l_rows[i].post } }).then(function (response) {
@@ -252,14 +296,12 @@ let init = (app) => {
         let post_id = app.vue.rows[r_idx].id;
         if (post._like === true) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: false });
-            //console.log('setting like to false');
             Vue.set(post, '_lname', "");
             Vue.set(post, '_like', false);
             Vue.set(post, '_lnum', 0)
         }
         else if (post._like === false & post._dislike === true) {
             axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
-            //console.log('setting dislike to true');
             Vue.set(post, '_like', true);
             Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_lnum', post._lnum + 1)
@@ -268,12 +310,12 @@ let init = (app) => {
         }
         else if (post._like === false & post._dislike === false) {
             axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
-            //console.log('setting like to true');
             Vue.set(post, '_like', true);
             Vue.set(post, '_lname', [{name:cur_user_name, id:cur_user_id}]);
             Vue.set(post, '_lnum', 1)
             Vue.set(post, '_dislike', false);
         }
+        app.get_likes();
     };
 
     app.set_dislikes = function (r_idx) {
@@ -281,14 +323,12 @@ let init = (app) => {
         let post_id = app.vue.rows[r_idx].id;
         if (post._dislike === true) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: false });
-            //console.log('setting dislike to false');
             Vue.set(post, '_dname', "");
             Vue.set(post, '_dislike', false);
             Vue.set(post, '_dnum', 0)
         }
         else if (post._dislike === false & post._like === true) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
-            //console.log('setting dislike to true');
             Vue.set(post, '_dislike', true);
             Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_dnum', post._dnum + 1)
@@ -297,28 +337,33 @@ let init = (app) => {
         }
         else if (post._dislike === false & post._like === false) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
-            //console.log('setting dislike to true');
             Vue.set(post, '_dislike', true);
             Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_dnum', 1)
             Vue.set(post, '_like', false);
         }
+        app.get_likes();
     };
 
-    app.add_follower = function (new_status, page_id) {
-        if (new_status == true) {
-            app.vue.following = true;
+    app.show_names = function (type, row_id) {
+        app.vue.show_modal = true;
+        app.vue.type = type;
+        if (type === "liked") {
+            app.vue.names = app.vue.rows[row_id]._lname
         }
         else {
-            app.vue.following = false;
+            app.vue.names = app.vue.rows[row_id]._dname
         }
-        axios.post(follow_url, { follow: new_status, page_id: page_id });
-    };
+    }
 
+    //Area for page checks (owner, followers, and likes)
     app.check_owner = function () {
         app.vue.cur_user = cur_user;
         app.vue.cur_user_id = cur_user_id;
         app.vue.cur_user_name = cur_user_name;
+        axios.get(user_info_url).then(function (response) {
+            app.vue.user_info = response.data.info
+        })
         app.vue.page_id = page_id;
         if (app.vue.page_id == app.vue.cur_user_id) {
             app.vue.profile = true;
@@ -356,19 +401,23 @@ let init = (app) => {
         // Complete as you see fit.
         set_likes: app.set_likes,
         set_dislikes: app.set_dislikes,
+
         add_follower: app.add_follower,
 
         show_names: app.show_names,
         close_modal: app.close_modal,
         show_following: app.show_following,
         show_followers: app.show_followers,
+
         set_show_post: app.set_show_post,
         set_show_likes: app.set_show_likes,
 
         check_owner: app.check_owner,
+
         add_posts: app.add_posts,
         set_add_status: app.set_add_status,
         delete_posts: app.delete_posts,
+        upload_post_image: app.upload_post_image,
 
         add_comments: app.add_comments,
         set_comment_status: app.set_comment_status,
@@ -386,11 +435,13 @@ let init = (app) => {
 
     // And this initializes it.
     app.init = () => {
+        app.check_owner();
         axios.get(load_posts_url).then(function (response) {
-            app.check_owner();
             app.vue.l_rows = response.data.l_rows;
             app.vue.follows = response.data.followers;
             app.vue.lfollowing = response.data.following;
+            app.vue.images = response.data.images;
+
             app.check_follow();
 
             let rows = response.data.rows;
@@ -412,9 +463,10 @@ let init = (app) => {
             app.vue.rows = rows;
             app.vue.user_posts = user_posts;
             app.vue.liked_posts = liked_posts;
-            app.set_comments();
 
             app.get_followers();
+            app.set_comments();
+            app.set_images();
             app.check();
             app.get_likes();
         })

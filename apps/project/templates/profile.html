@@ -7,225 +7,275 @@
 </style>
 
 <style>
+    .background {
+        background-image: linear-gradient(rgb(101, 143, 101), rgb(101, 119, 99), rgb(99, 91, 91))
+    }
+</style>
+
+<style>
     [v-cloak] {
         display: none;
     }
 </style>
 
-<div class="section" id="vue-target" v-cloak>
+<div class="section background" id="vue-target" v-cloak>
 
-    <div class="container block">
-        <div class="tile is-ancestor">
-            [[for row in rowss:]]
-            <div class="tile is-parent">
-                <div class="tile is-child">
-                    <img src="[[=row.picture]]" style="max-width:40;max-height: 40%;" />
-                    <button class="button is-right"
-                        style="background-color:transparent;border:none;outline:none;float:right;padding:2px 5px 2px 5px"
-                        @click="show_followers(true)">
-                        Followers: {{num_followers}}
-                    </button>
-                    <button class="button is-right"
-                        style="background-color:transparent;border:none;outline:none;float:right;padding:2px 5px 2px 5px"
-                        @click="show_following(true)">
-                        Following: {{num_following}}
-                    </button>
+    <body>
+        <title>Profile</title>
+        <div class="container block">
+            <div class="tile is-ancestor" v-if="user_info.length>0">
+                <div class="tile is-parent has-text-right is-2">
+                    <div class="tile is-child is-12">
+                        <img :src="user_info[0].picture" style="max-width:100%;max-height:100%;" />
+                        <button class="button is-right"
+                            style="background-color:transparent;border:none;outline:none;float:right;padding:2px 5px 2px 5px"
+                            @click="show_followers(true)">
+                            Followers: {{num_followers}}
+                        </button>
+                        <button class="button is-right"
+                            style="background-color:transparent;border:none;outline:none;float:right;padding:2px 5px 2px 5px"
+                            @click="show_following(true)">
+                            Following: {{num_following}}
+                        </button>
+                    </div>
+                    <br>
                 </div>
-            </div>
-            <div class="tile is-parent is-8 is-vertical">
-                <h1 class="title">[[=row.first_name]] [[=row.last_name]]</h1>
-                <div class="tile is-child">
-                    <h1>Hardiness Zone: [[=row.hardiness_zone]]
-                        <div>[[=row.description]]</div>
-                        <div>&nbsp;</div>
-                        <span>
-                            <button class="button" @click="set_show_post(true)">
-                                <i class="fa fa-user"></i><span>&nbsp;Posts</span>
-                            </button>
-                        </span>
-                        <span>
-                            <button class="button" @click="set_show_likes(true)">
-                                <i class="fa fa-thumbs-up"></i><span>&nbsp;Likes</span>
-                            </button>
-                        </span>
+                <div class="tile is-parent is-8 is-vertical">
+                    <h1 class="title">{{user_info[0].first_name}} {{user_info[0].last_name}}
                         <a class="button" style="float:right;" href="[[=URL('index')]]">
                             Dashboard
                         </a>
-                        <span v-if="profile">
-                            <button @click="set_add_status(true)" class="button is-primary" style="float:right">
-                                <i class="fa fa-plus fa-fw"></i>
-                            </button>
-                        </span>
-                        <span v-if="!profile">
-                            <span v-if="!following">
-                                <button @click="add_follower(true, page_id)" class="button is-primary"
-                                    style="float:right">
-                                    <i class="fa fa-user-plus"></i><span>&nbsp;Follow</span>
-                                </button>
-                            </span>
-                        </span>
-                        <span v-if="!profile">
-                            <span v-if="following">
-                                <button @click="add_follower(false, page_id)" class="button is-primary"
-                                    style="float:right">
-                                    <i class="fa fa-user-times"></i><span>&nbsp;Unfollow</span>
-                                </button>
-                            </span>
-                        </span>
                     </h1>
-                </div>
-                [[pass]]
-                <div v-if="add_mode" class="tile is-child">
-                    <div class="form">
-                        <div class="field">
-                            <textarea class="textarea" placeholder="Enter new post here" v-model="add_post"></textarea>
-                        </div>
+                    <div class="tile is-child">
+                        <h1>Hardiness Zone: {{user_info[0].hardiness_zone}}
+                            <div>{{user_info[0].description}}</div>
+                            <br>
+                            <span>
+                                <button class="button" @click="set_show_post(true)">
+                                    <i class="fa fa-user"></i><span>&nbsp;User's Posts</span>
+                                </button>
+                            </span>
+                            <span>
+                                <button class="button" @click="set_show_likes(true)">
+                                    <i class="fa fa-thumbs-up"></i><span>&nbsp;User's Likes</span>
+                                </button>
+                            </span>
 
-                        <div class="field">
-                            <div class="control">
-                                <input type="submit" @click="add_posts" value="Post" class="button is-primary">
-                                <input type="submit" @click="set_add_status(false)" value="Cancel"
-                                    class="button is-warning">
+                            <span v-if="profile">
+                                <button @click="set_add_status(true)" class="button is-primary" style="float:right">
+                                    <i class="fa fa-plus fa-fw" style="color:black"></i><span
+                                        style="color:black">&nbsp;New Post</span>
+                                </button>
+                            </span>
+                            <span v-if="!profile">
+                                <span v-if="!following">
+                                    <button @click="add_follower(true, page_id)" class="button is-primary"
+                                        style="float:right">
+                                        <i class="fa fa-user-plus" style="color:black"></i><span
+                                            style="color:black">&nbsp;Follow</span>
+                                    </button>
+                                </span>
+                            </span>
+                            <span v-if="!profile">
+                                <span v-if="following">
+                                    <button @click="add_follower(false, page_id)" class="button is-primary"
+                                        style="float:right">
+                                        <i class="fa fa-user-times" style="color:black"></i><span
+                                            style="color:black">&nbsp;Unfollow</span>
+                                    </button>
+                                </span>
+                            </span>
+                        </h1>
+                    </div>
+                    <div v-if="add_mode" class="tile is-child">
+                        <div class="form">
+                            <div class="field">
+                                <div class="tile">
+                                    <div class="tile is-9">
+                                       <textarea class="textarea" placeholder="Enter new post here" v-model="add_post"></textarea>
+                                    </div>
+                                    <div class="tile is-3">
+                                       <textarea class="textarea" placeholder="Enter tags here" v-model="add_tags"></textarea>
+                                    </div>
+                                 </div>
+                            </div>
+
+                            <div class="field">
+                                <div class="control">
+                                    <div class="tile">
+                                        <input type="submit" @click="add_posts" value="Post" class="button is-primary">
+                                        <div>&nbsp;</div>
+                                        <input type="submit" @click="set_add_status(false)" value="Cancel"
+                                            class="button is-warning">
+                                        <div>&nbsp;</div>
+                                        <span class="file">
+                                            <label class="file-label">
+                                                <input class="file-input" type="file"
+                                                    accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*"
+                                                    @change="upload_post_image($event)">
+                                                <span class="file-cta">
+                                                    <span class="file-label">
+                                                        <span><i class="fa fa-upload"></i></span>
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="tile is-child box" style="background-color:rgba(224,224,224,0.418); word-wrap: break-word;"
-                    v-for="r in rows.slice().reverse()">
-                    <article class="media">
-                        <figure class="media-left">
-                            <p class="image is-48x48">
-                                <img :src="r.picture">
-                            </p>
-                        </figure>
-                        <div class="media-content">
-                            <div class="content">
-                                <p>
-                                    <strong>{{r.first_name}} {{r.last_name}}</strong>
-                                    <br>
-                                    {{r.post}}
-                                    <br>
-                                    <span style="color:rgba(1, 65, 161, 0.63)">
-
-                                        <span @click="set_likes(r._idx)">
-                                            <i class="fa fa-2x fa-flip-horizontal"
-                                                :class="{'fa-thumbs-o-up':!r._like, 'fa-thumbs-up':r._like}"></i>
-                                        </span>
-                                        <button class="button is-normal modal-button"
-                                            style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px"
-                                            @click="show_names('liked', r._idx)">
-                                            {{r._lnum}}
-                                        </button>
-
-                                        <span @click="set_dislikes(r._idx)">
-                                            <i class="fa fa-2x"
-                                                :class="{'fa-thumbs-o-down':!r._dislike, 'fa-thumbs-down':r._dislike}"></i>
-                                        </span>
-                                        <button class="button is-normal modal-button"
-                                            style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px"
-                                            @click="show_names('disliked', r._idx)">
-                                            {{r._dnum}}
-                                        </button>
-
-                                    </span>
-
-                                    <button class="button" @click="set_comment_status(true, r._idx)"
-                                        style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px;color:rgba(1, 65, 161, 0.63)">
-                                        <i class="fa fa-comments"></i><span>&nbsp;Comment</span>
-                                    </button>
-
-                                    <span v-if="r.email === cur_user">
-                                        <button @click="delete_posts(r._idx)" class="button"
-                                            style="float:right;background-color:transparent;border:none;outline:none">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </span>
+                    <div class="tile is-child box"
+                        style="background-color:rgba(224,224,224,0.418); word-wrap: break-word;"
+                        v-for="r in rows.slice().reverse()">
+                        <article class="media">
+                            <figure class="media-left">
+                                <p class="image is-48x48">
+                                    <img :src="r.picture">
                                 </p>
+                            </figure>
+                            <div class="media-content">
+                                <div class="content">
+                                    <p>
+                                        <strong>{{r.first_name}} {{r.last_name}}</strong>
+                                        <br>
+                                        <span v-if="r.image.length>0">
+                                            <span v-for="i in r.image">
+                                                <img :src="i">
+                                            </span>
+                                            <br>
+                                        </span>
+                                        {{r.post}}
+                                        <br>
+                                        <span v-if="r.tags" style="color:grey">
+                                            Tags: {{r.tags}}
+                                            <br>
+                                        </span>
+                                        <span style="color:rgba(1, 65, 161, 0.63)">
 
-                            </div>
-                            <div v-if="r.commenting">
-                                <div v-if="add_comment_mode" class="media">
-                                    <div class="media-content">
-                                        <div class="content">
-                                            <div class="form">
-                                                <div class="field">
-                                                    <textarea class="textarea" placeholder="Enter new comment here"
-                                                        v-model="add_comment"></textarea>
-                                                </div>
+                                            <span @click="set_likes(r._idx)">
+                                                <i class="fa fa-2x fa-flip-horizontal"
+                                                    :class="{'fa-thumbs-o-up':!r._like, 'fa-thumbs-up':r._like}"></i>
+                                            </span>
+                                            <button class="button is-normal modal-button"
+                                                style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px"
+                                                @click="show_names('liked', r._idx)">
+                                                {{r._lnum}}
+                                            </button>
 
-                                                <div class="field">
-                                                    <div class="control">
-                                                        <input type="submit" @click="add_comments(r._idx,r.id)"
-                                                            value="Comment" class="button is-primary">
-                                                        <input type="submit" @click="set_comment_status(false,r._idx)"
-                                                            value="Cancel" class="button is-warning">
+                                            <span @click="set_dislikes(r._idx)">
+                                                <i class="fa fa-2x"
+                                                    :class="{'fa-thumbs-o-down':!r._dislike, 'fa-thumbs-down':r._dislike}"></i>
+                                            </span>
+                                            <button class="button is-normal modal-button"
+                                                style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px"
+                                                @click="show_names('disliked', r._idx)">
+                                                {{r._dnum}}
+                                            </button>
+
+                                        </span>
+
+                                        <button class="button" @click="set_comment_status(true, r._idx)"
+                                            style="background-color:transparent;border:none;outline:none;padding:2px 5px 2px 5px;color:rgba(1, 65, 161, 0.63)">
+                                            <i class="fa fa-comments"></i><span>&nbsp;Comment</span>
+                                        </button>
+
+                                        <span v-if="r.email === cur_user">
+                                            <button @click="delete_posts(r._idx)" class="button"
+                                                style="float:right;background-color:transparent;border:none;outline:none">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </span>
+                                    </p>
+
+                                </div>
+                                <div v-if="r.commenting">
+                                    <div v-if="add_comment_mode" class="media">
+                                        <div class="media-content">
+                                            <div class="content">
+                                                <div class="form">
+                                                    <div class="field">
+                                                        <textarea class="textarea" placeholder="Enter new comment here"
+                                                            v-model="add_comment"></textarea>
+                                                    </div>
+
+                                                    <div class="field">
+                                                        <div class="control">
+                                                            <input type="submit" @click="add_comments(r._idx,r.id)"
+                                                                value="Comment" class="button is-primary">
+                                                            <input type="submit"
+                                                                @click="set_comment_status(false,r._idx)" value="Cancel"
+                                                                class="button is-warning">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <article class="media" v-for="c in r.comments">
-                                <figure class="media-left">
-                                    <p class="image is-48x48">
-                                        <img :src="c[0].picture">
-                                    </p>
-                                </figure>
-                                <div class="media-content">
-                                    <div class="content">
-                                        <p>
-                                            <strong>{{c[0].first_name}} {{c[0].last_name}}</strong>
-                                            <br>
-                                            {{c[0].comment}}
-                                            <span v-if="c[0].email === cur_user">
-                                                <button @click="delete_comments(r._idx,c[0].id)" class="button"
-                                                    style="float:right;background-color:transparent;border:none;outline:none">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
-                                            </span>
+                                <article class="media" v-for="c in r.comments">
+                                    <figure class="media-left">
+                                        <p class="image is-48x48">
+                                            <img :src="c[0].picture">
                                         </p>
+                                    </figure>
+                                    <div class="media-content">
+                                        <div class="content">
+                                            <p>
+                                                <strong>{{c[0].first_name}} {{c[0].last_name}}</strong>
+                                                <br>
+                                                {{c[0].comment}}
+                                                <span v-if="c[0].email === cur_user">
+                                                    <button @click="delete_comments(r._idx,c[0].id)" class="button"
+                                                        style="float:right;background-color:transparent;border:none;outline:none">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </span>
+                                            </p>
+
+                                        </div>
 
                                     </div>
+                                </article>
+                            </div>
+                        </article>
+                    </div>
 
-                                </div>
-                            </article>
-                        </div>
-                    </article>
                 </div>
-
-            </div>
-            <div class="tile is-parent">
-                <div>
-                    <a v-if="profile" class="button" href="[[=URL('edit_profile', row.id, signer=url_signer)]]">
-                        <span class="icon"><i class="fa fa-fw fa-cog"></i></span>
-                    </a>
-                </div>
-                <div v-if="profile">
-                    <div class="file">
-                        <label class="file-label">
-                            <input class="file-input" type="file"
-                                accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*"
-                                @change="upload_file($event)">
-                            <span class="file-cta">
-                                <span class="file-label">
-                                    <span><i class="fa fa-upload"></i></span>
+                <div class="tile is-parent">
+                    <div>
+                        <a v-if="profile" class="button"
+                            href="[[=URL('edit_profile', cur_user_id, signer=url_signer)]]">
+                            <span class="icon"><i class="fa fa-fw fa-cog"></i></span>
+                        </a>
+                    </div>
+                    <div v-if="profile">
+                        <div class="file">
+                            <label class="file-label">
+                                <input class="file-input" type="file"
+                                    accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*"
+                                    @change="upload_file($event)">
+                                <span class="file-cta">
+                                    <span class="file-label">
+                                        <span><i class="fa fa-upload"></i></span>
+                                    </span>
                                 </span>
-                            </span>
-                        </label>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="tile is-ancestor">
-            <div class="tile is-parent"></div>
-            <div class="tile is-parent has-text-left is-8">
+            <div class="tile is-ancestor">
+                <div class="tile is-parent"></div>
+                <div class="tile is-parent has-text-left is-8">
 
+                </div>
+                <div class="tile is-parent"></div>
             </div>
-            <div class="tile is-parent"></div>
         </div>
-    </div>
+    </body>
+
     <div class="modal" :class="{'is-active':show_followers_modal}">
         <div class="modal-background"></div>
         <div class="modal-card">
@@ -299,6 +349,8 @@
 [[block page_scripts]]
 
 <script>
+
+    let user_info_url = "[[=XML(user_info_url)]]";
     let add_post_url = "[[=XML(add_post_url)]]";
     let load_posts_url = "[[=XML(load_posts_url)]]";
     let delete_post_url = "[[=XML(delete_post_url)]]";
@@ -314,6 +366,7 @@
     let cur_user_name = "[[ =cur_user_name ]]";
     let cur_user_id = "[[ =cur_user_id ]]";
     let page_id = "[[ =page_id ]]";
+
 </script>
 <script src="js/profile.js"></script>
 [[end]]

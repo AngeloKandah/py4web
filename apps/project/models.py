@@ -30,7 +30,7 @@ db.define_table(
     Field('first_name', requires=IS_NOT_EMPTY()),
     Field('last_name', requires=IS_NOT_EMPTY()),
     Field('hardiness_zone', requires=IS_NOT_EMPTY()),
-    Field('picture', 'text'),
+    Field('picture', 'text', default="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="),
     Field('description'),
 )
 
@@ -46,6 +46,13 @@ db.define_table(
     Field('last_name'),
     Field('picture', 'text'),
     Field('post', requires = IS_NOT_EMPTY()),
+    Field('tags'),
+)
+
+db.define_table(
+    'images',
+    Field('post', 'reference posts'),
+    Field('image')
 )
 
 db.define_table(

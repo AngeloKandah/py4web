@@ -45,6 +45,7 @@ def index():
         redirect(URL('create_profile'))
     return dict(
         url_singer=url_signer,
+        user_info_url = URL('user_info', user.id, signer=url_signer),
         load_posts_url = URL('load_posts',user.id, signer=url_signer),
         add_post_url = URL('add_posts', signer=url_signer),
         delete_post_url = URL('delete_posts', signer=url_signer),
@@ -64,48 +65,26 @@ def index():
 def profile(users_id=None):
     assert users_id is not None
     user = db(db.users.user_email == get_user_email()).select().first()
-    if(users_id != user.id):
-        rowss = db(db.users.id == users_id).select()
-        return dict(
-            rowss=rowss,
-            url_signer=url_signer,
-            load_posts_url = URL('load_user_posts', users_id, signer=url_signer),
-            add_post_url = URL('add_posts', signer=url_signer),
-            delete_post_url = URL('delete_posts', signer=url_signer),
-            load_likes_url = URL('load_likes', signer=url_signer),
-            get_likes_url = URL('get_likes', signer=url_signer),
-            get_dislikes_url = URL('get_dislikes', signer=url_signer),
-            follow_url = URL('follow', signer=url_signer),
-            add_comment_url = URL('add_comments',signer=url_signer),
-            delete_comment_url = URL('delete_comments',signer=url_signer),
-            upload_profilepic_url = URL('upload_profilepic', signer=url_signer),
+    page = db(db.users.id == users_id).select().first()
+    return dict(
+        url_signer=url_signer,
+        user_info_url = URL('user_info', users_id, signer=url_signer),
+        load_posts_url = URL('load_user_posts', users_id, signer=url_signer),
+        add_post_url = URL('add_posts', signer=url_signer),
+        delete_post_url = URL('delete_posts', signer=url_signer),
+        load_likes_url = URL('load_likes', signer=url_signer),
+        get_likes_url = URL('get_likes', signer=url_signer),
+        get_dislikes_url = URL('get_dislikes', signer=url_signer),
+        follow_url = URL('follow', signer=url_signer),
+        add_comment_url = URL('add_comments',signer=url_signer),
+        delete_comment_url = URL('delete_comments',signer=url_signer),
+        upload_profilepic_url = URL('upload_profilepic', signer=url_signer),
 
-            cur_user = get_user_email(),
-            cur_user_name = user.first_name + " " + user.last_name,
-            cur_user_id = user.id,
-            page_id = users_id
-        )
-    else:
-        rowss = db(db.users.user_email == get_user_email()).select()
-        return dict(
-            rowss=rowss,
-            url_signer=url_signer,
-            load_posts_url = URL('load_user_posts', user.id, signer=url_signer),
-            add_post_url = URL('add_posts', signer=url_signer),
-            delete_post_url = URL('delete_posts', signer=url_signer),
-            load_likes_url = URL('load_likes', signer=url_signer),
-            get_likes_url = URL('get_likes', signer=url_signer),
-            get_dislikes_url = URL('get_dislikes', signer=url_signer),
-            follow_url = URL('follow', signer=url_signer),
-            add_comment_url = URL('add_comments',signer=url_signer),
-            delete_comment_url = URL('delete_comments',signer=url_signer),
-            upload_profilepic_url = URL('upload_profilepic', signer=url_signer),
-
-            cur_user = get_user_email(),
-            cur_user_name = user.first_name + " " + user.last_name,
-            cur_user_id = user.id,
-            page_id = user.id,
-        )
+        cur_user = get_user_email(),
+        cur_user_name = user.first_name + " " + user.last_name,
+        cur_user_id = user.id,
+        page_id = page.id,
+    )
 
 @action('edit_profile/<users_id:int>', method=["GET", "POST"])
 @action.uses(db, session, auth.user, url_signer.verify(),'edit_profile.html')
@@ -152,38 +131,117 @@ def create_profile():
         redirect(URL('index'))
     return dict(form=form)
 
+@action('user_info/<users_id:int>')
+@action.uses(url_signer.verify(), db)
+def user_info(users_id=None):
+    row = db(db.users.id == users_id).select().first()
+    info = []
+    user = {
+        'first_name':row.first_name,
+        'last_name':row.last_name,
+        'picture':row.picture,
+        'hardiness_zone':row.hardiness_zone,
+        'description':row.description,
+        'id':row.id,
+    }
+    info.append(user)
+    return dict(info=info)
+
 @action('load_posts/<users_id:int>')
 @action.uses(url_signer.verify(), db)
 def load_posts(users_id=None):
     follows = db(db.followers.follower == users_id).select().as_list()
-    x = []
+    following_list = []
+    
+    posts = []
     for follow in follows:
-        x.append(follow["following"])
+        posts.append(follow["following"])
+        n = db(follow['following'] == db.users.id).select().first()
+        if n is not None :
+            full_name = n.first_name + " " + n.last_name
+        name = {
+            'follower':follow['follower'],
+            'following':follow['following'],
+            'name': full_name,
+        }
+        following_list.insert(0,name)
+
+    followers = db(db.followers.following == users_id).select()
+    followers_list = []
+    for info in followers:
+        n = db(info['follower'] == db.users.id).select().first()
+        if n is not None :
+            full_name = n.first_name + " " + n.last_name
+        name = {
+            'follower':info['follower'],
+            'following':info['following'],
+            'name': full_name,
+        }
+        followers_list.insert(0,name)
+
     rows = []
     rows += db(db.posts.email==get_user_email()).select().as_list()
+    
     if len(follows) != 0:
-        for z in range(len(x)):
-            rows += db((db.posts.user == x[z])).select().as_list()
+        for z in range(len(posts)):
+            rows += db((db.posts.user == posts[z])).select().as_list()
 
     def sortPost(r):
         return r['id']
         
     rows.sort(key=sortPost)
-    l_rows = db(db.likes).select().as_list()
+
+    liked = db(db.likes).select().as_list()
+
+    rendered_liked = []
+    for post in rows:
+        for like in liked:
+            if like["post"] == post["id"]:
+                rendered_liked.append(like)
+
+    images = []
+    for p in rows:
+        i = db(db.images.post == p["id"]).select().as_list()
+        if i is not None:
+            images += i
+    
     comments = db(db.comments).select().as_list()
-    return dict(rows=rows, l_rows=l_rows,comments=comments)
+    return dict(
+        rows=rows,
+        l_rows=rendered_liked,
+        comments=comments,
+        followers=followers_list,
+        following=following_list,
+        images=images,
+    )
 
 @action('load_user_posts/<users_id:int>')
 @action.uses(url_signer.verify(), db)
 def load_user_posts(users_id=None):
     posts = db(db.posts.user == users_id).select().as_list()
     liked_posts = db((db.likes.rater == users_id)).select().as_list()
+    comments = db(db.comments).select().as_list()
+    liked = db(db.likes).select().as_list()
+
+    images = []
+    for p in posts:
+        i = db(db.images.post == p["id"]).select().as_list()
+        if i is not None:
+            images += i
+
+    rendered_liked = []
+    for post in posts:
+        for like in liked:
+            if like["post"] == post["id"]:
+                rendered_liked.append(like)
+    
+
     l_posts = []
     for l in liked_posts:
         p = db(db.posts.id == l["post"]).select().as_list()
         if p is not None:
             l_posts += p
-    liked = db(db.likes).select().as_list()
+
     followers = db(db.followers.following == users_id).select()
     followers_list = []
     for info in followers:
@@ -209,14 +267,15 @@ def load_user_posts(users_id=None):
             'name': full_name,
         }
         following_list.insert(0,name)
-    comments = db(db.comments).select().as_list()
+        
     return dict(
         rows=posts,
         liked_posts=l_posts,
-        l_rows=liked,
+        l_rows=rendered_liked,
         followers=followers_list,
         following=following_list,
-        comments = comments,
+        comments=comments,
+        images=images,
     )
 
 @action('add_posts', method="POST")
@@ -226,6 +285,7 @@ def add_post():
     first_name = rows.first_name
     last_name = rows.last_name
     picture = rows.picture
+
     id = db.posts.insert(
         user = db(db.users.user_email == get_user_email()).select().first(),
         email = get_user_email(),
@@ -233,7 +293,13 @@ def add_post():
         last_name = rows.last_name,
         picture = rows.picture,
         post = request.json.get('post'),
+        tags = request.json.get('tags'),
     )
+    for i in request.json.get('image'):
+        db.images.insert(
+            image = i,
+            post = id,
+        )
     return dict(id=id,first_name=first_name,last_name=last_name,email=get_user_email(),picture=picture)
 
 @action('add_comments', method="POST")
@@ -323,7 +389,8 @@ def search():
         if re.search(q,firs["first_name"] + " " + firs["last_name"]):
             name = {
                 'id': firs["id"],
-                'name': firs["first_name"] + " " + firs["last_name"]
+                'name': firs["first_name"] + " " + firs["last_name"],
+                'picture': firs["picture"],
             }
             names.append(name)
     return dict(results=names)
@@ -341,7 +408,6 @@ def follow():
         )
     else:
         db((db.followers.following == page_id) & (db.followers.follower == cur_user)).delete()
-    #make else statement, will handle unfollowing tomorrow morning
     return "ok"
 
 @action('upload_profilepic', method="POST")
@@ -349,7 +415,6 @@ def follow():
 def upload_profilepic():
     picture = request.json.get("picture")
     users_id = request.json.get("users_id")
-    db(db.users.user_email == get_user_email()).update(picture=picture)
     previous = db(db.posts.user == users_id).select().as_list()
     previous_c = db(db.comments.user == users_id).select().as_list()
     for id in previous:
@@ -362,4 +427,6 @@ def upload_profilepic():
             (db.comments.id == id["id"]),
             picture = picture,
         )
+    db(db.users.user_email == get_user_email()).update(picture=picture)
+
     return "ok"
