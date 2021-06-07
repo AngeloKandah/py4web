@@ -9,6 +9,8 @@ pluralize >= 0.1.6
 yatl >= 20210326.1
 pydal >= 20200910.1
 watchgod >= 0.6
+nqgcs==0.1.2
+pycrypto>=2.6.1
 
 ### for documentation only ###
 # use also docs/requirements.txt

@@ -66,7 +66,7 @@ db.define_table(
     Field('first_name'),
     Field('last_name'),
     Field('like', 'boolean', default = False),
-    Field('dislike', 'boolean', deafult = False)
+    Field('dislike', 'boolean', default = False)
 )
 
 db.define_table(
@@ -79,7 +79,7 @@ db.define_table(
     'comments',
     Field('user', 'reference users'),
     Field('post', 'reference posts'),
-    Field('email',defaul=get_user_email()),
+    Field('email', default=get_user_email()),
     Field('first_name'),
     Field('last_name'),
     Field('picture', 'text'),

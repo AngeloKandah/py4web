@@ -45,7 +45,7 @@ from .gcs_url import gcs_url
 
 url_signer = URLSigner(session)
 
-BUCKET = '/gritter-project-uploads'
+BUCKET = '/gritter-project-uploads2'
 
 GCS_KEY_PATH = os.path.join(APP_FOLDER, 'private/gcs_keys.json')
 with open(GCS_KEY_PATH) as gcs_key_f:
@@ -57,7 +57,7 @@ gcs = NQGCS(json_key_path=GCS_KEY_PATH)
 @action.uses(db, auth, 'index.html')
 def index():
     if get_user_email() is None:
-        redirect(URL('auth/login'))
+        redirect(URL('auth/plugin/oauth2google/login'))
     user = db(db.users.user_email == get_user_email()).select().first()
     if user is None:
         redirect(URL('create_profile'))
@@ -76,6 +76,9 @@ def index():
         cur_user = get_user_email(),
         cur_user_name = user.first_name + " " + user.last_name,
         cur_user_id = user.id,
+
+        obtain_gcs_url = URL('obtain_gcs', signer=url_signer),
+
     )
 
 @action('profile/<users_id:int>', method=["GET", "POST"])
@@ -97,6 +100,8 @@ def profile(users_id=None):
         add_comment_url = URL('add_comments',signer=url_signer),
         delete_comment_url = URL('delete_comments',signer=url_signer),
         upload_profilepic_url = URL('upload_profilepic', signer=url_signer),
+
+        dummy_like_url = URL('dummy_like', signer=url_signer),
 
         cur_user = get_user_email(),
         cur_user_name = user.first_name + " " + user.last_name,

@@ -38,6 +38,10 @@ let init = (app) => {
 
         user_info: [],
 
+        file_names: [],
+
+        finished: true,
+
         rows: [],
         comments: [],
         l_rows: [],
@@ -106,6 +110,7 @@ let init = (app) => {
         app.vue.add_post = "";
         app.vue.add_tags = "";
         app.vue.post_image = [];
+        app.vue.file_names = [];
     };
 
     app.set_add_status = function (new_status, type) {
@@ -135,12 +140,15 @@ let init = (app) => {
     };
 
     app.upload_post_image = function (event) {
+        app.vue.finished = false;
+        
         let input = event.target;
         let file = input.files[0];
         if (file) {
 
             let file_type = file.type;
             let file_name = file.name;
+            app.vue.file_names.push(file.name);
 
             axios.post(obtain_gcs_url, {
                 action: "PUT",
@@ -159,6 +167,7 @@ let init = (app) => {
                         file_path: file_path,
                     }
                     app.vue.post_image.push(image_info)
+                    app.vue.finished = true;
                 });
                 req.open("PUT", upload_url, true)
                 req.send(file);
@@ -359,13 +368,13 @@ let init = (app) => {
                         file_path: file_path,
                     }).then(function (r) {
                         app.vue.user_info[0].picture = r.picture;
+                        window.location.reload();
                     });
                 });
                 req.open("PUT", upload_url, true)
                 req.send(file);
             });
         }
-        window.location.reload();
     }
 
     //Area for likes functions
@@ -376,6 +385,8 @@ let init = (app) => {
                     if (app.vue.rows[j].id == app.vue.l_rows[i].post) {
                         app.vue.rows[j]._lname = response.data.likes;
                         app.vue.rows[j]._dname = response.data.dislikes;
+                        Vue.set(app.vue.rows[j], '_lname', response.data.likes)
+                        Vue.set(app.vue.rows[j], '_dname', response.data.dislikes);
                         Vue.set(app.vue.rows[j], '_lnum', response.data.lnum)
                         Vue.set(app.vue.rows[j], '_dnum', response.data.dnum)
                     }
@@ -388,54 +399,64 @@ let init = (app) => {
         let post = app.vue.rows[r_idx];
         let post_id = app.vue.rows[r_idx].id;
         if (post._like === true) {
-            axios.post(load_likes_url, { post: post_id, like: false, dislike: false });
             Vue.set(post, '_lname', "");
             Vue.set(post, '_like', false);
-            Vue.set(post, '_lnum', 0)
+            Vue.set(post, '_lnum', 0);
+            axios.post(load_likes_url, { post: post_id, like: false, dislike: false }).then(function(){
+                app.get_likes();
+            });
         }
         else if (post._like === false & post._dislike === true) {
-            axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
             Vue.set(post, '_like', true);
-            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
+            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_lnum', post._lnum + 1)
             Vue.set(post, '_dnum', post._dnum - 1)
             Vue.set(post, '_dislike', false);
+            axios.post(load_likes_url, { post: post_id, like: true, dislike: false }).then(function(){
+                app.get_likes();
+            });
         }
         else if (post._like === false & post._dislike === false) {
-            axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
             Vue.set(post, '_like', true);
-            Vue.set(post, '_lname', [{ name: cur_user_name, id: cur_user_id }]);
+            Vue.set(post, '_lname', [{name:cur_user_name, id:cur_user_id}]);
             Vue.set(post, '_lnum', 1)
             Vue.set(post, '_dislike', false);
+            axios.post(load_likes_url, { post: post_id, like: true, dislike: false }).then(function(){
+                app.get_likes();
+            });
         }
-        app.get_likes();
     };
 
     app.set_dislikes = function (r_idx) {
         let post = app.vue.rows[r_idx];
         let post_id = app.vue.rows[r_idx].id;
         if (post._dislike === true) {
-            axios.post(load_likes_url, { post: post_id, like: false, dislike: false });
             Vue.set(post, '_dname', "");
             Vue.set(post, '_dislike', false);
             Vue.set(post, '_dnum', 0)
+            axios.post(load_likes_url, { post: post_id, like: false, dislike: false }).then(function(){
+                app.get_likes();
+            });
         }
         else if (post._dislike === false & post._like === true) {
-            axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
             Vue.set(post, '_dislike', true);
-            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
+            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_dnum', post._dnum + 1)
             Vue.set(post, '_lnum', post._lnum - 1)
             Vue.set(post, '_like', false);
+            axios.post(load_likes_url, { post: post_id, like: false, dislike: true }).then(function(){
+                app.get_likes();
+            });
         }
         else if (post._dislike === false & post._like === false) {
-            axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
             Vue.set(post, '_dislike', true);
-            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
+            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
             Vue.set(post, '_dnum', 1)
             Vue.set(post, '_like', false);
+            axios.post(load_likes_url, { post: post_id, like: false, dislike: true }).then(function(){
+                app.get_likes();
+            });
         }
-        app.get_likes();
     };
 
     app.show_names = function (type, row_id) {

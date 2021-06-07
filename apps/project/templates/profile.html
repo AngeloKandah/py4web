@@ -62,10 +62,13 @@
                             </span>
 
                             <span v-if="profile">
-                                <button @click="set_add_status(true, 'New')" class="button is-primary" style="float:right">
+                                <span v-if="!add_mode">
+                                    <button @click="set_add_status(true, 'New')" class="button is-primary"
+                                    style="float:right">
                                     <i class="fa fa-plus fa-fw" style="color:black"></i><span
                                         style="color:black">&nbsp;New Post</span>
                                 </button>
+                                </span>
                             </span>
                             <span v-if="!profile">
                                 <span v-if="!following">
@@ -92,12 +95,14 @@
                             <div class="field">
                                 <div class="tile">
                                     <div class="tile is-9">
-                                       <textarea class="textarea" placeholder="Enter new post here" v-model="add_post"></textarea>
+                                        <textarea class="textarea" placeholder="Enter new post here"
+                                            v-model="add_post"></textarea>
                                     </div>
                                     <div class="tile is-3">
-                                       <textarea class="textarea" placeholder="Enter tags here" v-model="add_tags"></textarea>
+                                        <textarea class="textarea" placeholder="Enter tags here"
+                                            v-model="add_tags"></textarea>
                                     </div>
-                                 </div>
+                                </div>
                             </div>
 
                             <div class="field">
@@ -108,14 +113,29 @@
                                         <input type="submit" @click="set_add_status(false, 'Cancel')" value="Cancel"
                                             class="button is-warning">
                                         <div>&nbsp;</div>
-                                        <span class="file">
+                                        <span class="file has-name">
                                             <label class="file-label">
-                                                <input class="file-input" type="file"
+                                                <span v-if="finished">
+                                                    <input class="file-input" type="file"
                                                     accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*"
                                                     @change="upload_post_image($event)">
-                                                <span class="file-cta">
-                                                    <span class="file-label">
-                                                        <span><i class="fa fa-upload"></i></span>
+                                                    <span class="file-cta">
+                                                        <span class="file-label">
+                                                            <span><i class="fa fa-upload"></i></span>
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                                <span v-else>
+                                                    <a class="button is-loading" disabled></a>
+                                                </span>
+                                                <span class="file-name has-background-white">
+                                                    <span v-if="file_names.length>0">
+                                                        <span v-for="f in file_names">
+                                                            {{f}}
+                                                        </span>
+                                                    </span>
+                                                    <span v-else>
+                                                        Upload Images
                                                     </span>
                                                 </span>
                                             </label>
@@ -247,16 +267,17 @@
                     <div>
                         <a v-if="profile" class="button"
                             href="[[=URL('edit_profile', cur_user_id, signer=url_signer)]]">
-                            <span class="icon"><i class="fa fa-fw fa-cog"></i></span>
+                            <span class="icon"><i class="fa fa-fw fa-cog"></i></span><span>Edit Profile</span>
                         </a>
                     </div>
+                    <div>&nbsp;</div>
                     <div v-if="profile">
                         <div class="file">
                             <label class="file-label">
                                 <input class="file-input" type="file" @change="upload_file($event)">
                                 <span class="file-cta">
                                     <span class="file-label">
-                                        <span><i class="fa fa-upload"></i></span>
+                                        <span><i class="fa fa-upload"></i><span>Upload Profile Pic</span></span>
                                     </span>
                                 </span>
                             </label>
