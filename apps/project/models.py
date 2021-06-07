@@ -32,11 +32,14 @@ db.define_table(
     Field('hardiness_zone', requires=IS_NOT_EMPTY()),
     Field('picture', 'text', default="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="),
     Field('description'),
+    Field('file_path'),
+
 )
 
 db.users.user_email.readable = db.users.user_email.writable = False
 db.users.id.readable = db.users.id.writable = False
 db.users.picture.readable = db.users.picture.writable = False
+db.users.file_path.readable = db.users.file_path.writable = False
 
 db.define_table(
     'posts',
@@ -52,7 +55,8 @@ db.define_table(
 db.define_table(
     'images',
     Field('post', 'reference posts'),
-    Field('image')
+    Field('image'),
+    Field('file_path'),
 )
 
 db.define_table(

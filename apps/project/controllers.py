@@ -24,6 +24,12 @@ The path follows the bottlepy syntax.
 session, db, T, auth, and tempates are examples of Fixtures.
 Warning: Fixtures MUST be declared with @action.uses({fixtures}) else your app will result in undefined behavior
 """
+import json
+import os
+import uuid
+
+from nqgcs import NQGCS
+
 from py4web import action, request, abort, redirect, URL
 from yatl.helpers import A
 from .common import db, session, T, cache, auth, logger, authenticated, unauthenticated, flash, Field
@@ -33,7 +39,19 @@ from py4web.utils.form import Form, FormStyleBulma
 from pydal.validators import *
 import re
 
+from .settings import APP_FOLDER
+from .gcs_url import gcs_url
+
+
 url_signer = URLSigner(session)
+
+BUCKET = '/gritter-project-uploads'
+
+GCS_KEY_PATH = os.path.join(APP_FOLDER, 'private/gcs_keys.json')
+with open(GCS_KEY_PATH) as gcs_key_f:
+    GCS_KEYS = json.load(gcs_key_f)
+
+gcs = NQGCS(json_key_path=GCS_KEY_PATH)
 
 @action('index')
 @action.uses(db, auth, 'index.html')
@@ -84,6 +102,8 @@ def profile(users_id=None):
         cur_user_name = user.first_name + " " + user.last_name,
         cur_user_id = user.id,
         page_id = page.id,
+
+        obtain_gcs_url = URL('obtain_gcs', signer=url_signer),
     )
 
 @action('edit_profile/<users_id:int>', method=["GET", "POST"])
@@ -143,6 +163,7 @@ def user_info(users_id=None):
         'hardiness_zone':row.hardiness_zone,
         'description':row.description,
         'id':row.id,
+        'file_path':row.file_path,
     }
     info.append(user)
     return dict(info=info)
@@ -297,7 +318,8 @@ def add_post():
     )
     for i in request.json.get('image'):
         db.images.insert(
-            image = i,
+            image = i["image"],
+            file_path = i["file_path"],
             post = id,
         )
     return dict(id=id,first_name=first_name,last_name=last_name,email=get_user_email(),picture=picture)
@@ -426,18 +448,50 @@ def follow():
 def upload_profilepic():
     picture = request.json.get("picture")
     users_id = request.json.get("users_id")
+    file_path = request.json.get("file_path")
     previous = db(db.posts.user == users_id).select().as_list()
     previous_c = db(db.comments.user == users_id).select().as_list()
     for id in previous:
         db.posts.update_or_insert(
             (db.posts.id == id["id"]),
             picture=picture,
+            file_path=file_path,
         )
     for id in previous_c:
         db.likes.update_or_insert(
             (db.comments.id == id["id"]),
             picture = picture,
+            file_path=file_path,
         )
-    db(db.users.user_email == get_user_email()).update(picture=picture)
-
+    db(db.users.user_email == get_user_email()).update(picture=picture,file_path=file_path)
+    
     return "ok"
+
+@action('obtain_gcs', method="POST")
+@action.uses(url_signer.verify(), db)
+def obtain_gcs():
+    """Returns the URL to do download / upload / delete for GCS."""
+    verb = request.json.get("action")
+    if verb == "PUT":
+        mimetype = request.json.get("mimetype", "")
+        file_name = request.json.get("file_name")
+        extension = os.path.splitext(file_name)[1]
+        # Use + and not join for Windows, thanks Blayke Larue
+        file_path = BUCKET + "/" + str(uuid.uuid1()) + extension
+        image_url = ("https://storage.cloud.google.com" + file_path + "?authuser=0")
+        # Marks that the path may be used to upload a file.
+        upload_url = gcs_url(GCS_KEYS, file_path, verb='PUT',
+                             content_type=mimetype)
+        return dict(
+            signed_url=upload_url,
+            file_path=file_path,
+            image_url=image_url,
+        )
+    elif verb in ["GET", "DELETE"]:
+        file_path = request.json.get("file_path")
+        if file_path is not None:
+            # We check that the file_path belongs to the user.
+            delete_url = gcs_url(GCS_KEYS, file_path, verb='DELETE')
+            return dict(signed_url=delete_url)
+        # Otherwise, we return no URL, so we don't authorize the deletion.
+        return dict(signer_url=None)

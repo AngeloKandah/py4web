@@ -98,7 +98,7 @@ let init = (app) => {
                 });
                 app.enumerate(app.vue.rows);
                 app.reset_form();
-                app.set_add_status(false);
+                app.set_add_status(false, "Add");
             });
     };
 
@@ -108,28 +108,69 @@ let init = (app) => {
         app.vue.post_image = [];
     };
 
-    app.set_add_status = function (new_status) {
-        app.reset_form();
+    app.set_add_status = function (new_status, type) {
         app.vue.add_mode = new_status;
+
+        if(type == "Cancel"){
+            if (app.vue.post_image.length > 0) {
+                for (j = 0; j < app.vue.post_image.length; j++) {
+                    axios.post(obtain_gcs_url, {
+                        action: "DELETE",
+                        file_path: app.vue.post_image[j].file_path,
+                    }).then(function (r) {
+                        let delete_url = r.data.signed_url;
+                        if (delete_url) {
+
+                            let req = new XMLHttpRequest();
+
+                            req.open("DELETE", delete_url);
+                            req.send();
+                        };
+                    });
+                };
+            };
+        };
+
+        app.reset_form();
     };
 
     app.upload_post_image = function (event) {
         let input = event.target;
         let file = input.files[0];
         if (file) {
-            let reader = new FileReader();
-            reader.addEventListener("load",function () {
-                app.vue.post_image.push(reader.result);
+
+            let file_type = file.type;
+            let file_name = file.name;
+
+            axios.post(obtain_gcs_url, {
+                action: "PUT",
+                mimetype: file_type,
+                file_name: file_name,
+            }).then((r) => {
+                let upload_url = r.data.signed_url;
+                let image_url = r.data.image_url;
+                let file_path = r.data.file_path;
+
+                let req = new XMLHttpRequest();
+
+                req.addEventListener("load", function () {
+                    image_info = {
+                        image: image_url,
+                        file_path: file_path,
+                    }
+                    app.vue.post_image.push(image_info)
+                });
+                req.open("PUT", upload_url, true)
+                req.send(file);
             });
-            reader.readAsDataURL(file);
         }
     }
 
     app.set_images = function () {
-        for(let i = 0; i < app.vue.images.length; i++){
-            for(let j = 0; j < app.vue.rows.length; j++){
-                if(app.vue.images[i].post == app.vue.rows[j].id){
-                    app.vue.rows[j].image.push(app.vue.images[i].image)
+        for (let i = 0; i < app.vue.images.length; i++) {
+            for (let j = 0; j < app.vue.rows.length; j++) {
+                if (app.vue.images[i].post == app.vue.rows[j].id) {
+                    app.vue.rows[j].image.push(app.vue.images[i])
                     break;
                 }
             }
@@ -141,6 +182,25 @@ let init = (app) => {
         axios.get(delete_post_url, { params: { id: id } }).then(function (response) {
             for (let i = 0; i < app.vue.rows.length; i++) {
                 if (app.vue.rows[i].id === id) {
+
+                    if (app.vue.rows[i].image.length > 0) {
+                        for (j = 0; j < app.vue.rows[i].image.length; j++) {
+                            axios.post(obtain_gcs_url, {
+                                action: "DELETE",
+                                file_path: app.vue.rows[i].image[j].file_path,
+                            }).then(function (r) {
+                                let delete_url = r.data.signed_url;
+                                if (delete_url) {
+
+                                    let req = new XMLHttpRequest();
+
+                                    req.open("DELETE", delete_url);
+                                    req.send();
+                                };
+                            });
+                        }
+                    };
+
                     app.vue.rows.splice(i, 1);
                     app.enumerate(app.vue.rows);
                     app.check();
@@ -165,16 +225,16 @@ let init = (app) => {
                     email: response.data.email,
                     picture: response.data.picture,
                 });
-                app.vue.rows[row_id].comments.push([app.vue.comments[app.vue.comments.length-1]])
+                app.vue.rows[row_id].comments.push([app.vue.comments[app.vue.comments.length - 1]])
                 app.reset_comments();
-                app.set_comment_status(false,row_id);
+                app.set_comment_status(false, row_id);
             });
     };
 
     app.set_comments = function () {
-        for(let i = 0; i < app.vue.rows.length; i++){
-            for(let j = 0; j < app.vue.comments.length; j++){
-                if(app.vue.comments[j].post == app.vue.rows[i].id){
+        for (let i = 0; i < app.vue.rows.length; i++) {
+            for (let j = 0; j < app.vue.comments.length; j++) {
+                if (app.vue.comments[j].post == app.vue.rows[i].id) {
                     app.vue.rows[i].comments.push([app.vue.comments[j]])
                 }
             }
@@ -185,7 +245,8 @@ let init = (app) => {
         app.vue.add_comment = "";
     }
 
-    app.set_comment_status = function(new_status, row_id) {
+    app.set_comment_status = function (new_status, row_id) {
+        app.reset_comments();
         app.vue.add_comment_mode = new_status;
         app.vue.rows[row_id].commenting = new_status;
     }
@@ -193,8 +254,8 @@ let init = (app) => {
     app.delete_comments = function (row_idx, c_id) {
         let id = c_id
         let c = app.vue.rows[row_idx].comments
-        axios.get(delete_comment_url, {params: {id: id} }).then(function (response) {
-            for(let i = 0; i < c.length; i++) {
+        axios.get(delete_comment_url, { params: { id: id } }).then(function (response) {
+            for (let i = 0; i < c.length; i++) {
                 if (c[i][0].id == id) {
                     app.vue.comments.splice(i, 1);
                     c.splice([i][0], 1)
@@ -217,13 +278,13 @@ let init = (app) => {
     }
 
     app.show_following = function (new_status) {
-        app.vue.show_following_modal = new_status;    
+        app.vue.show_following_modal = new_status;
     }
 
     app.get_followers = function () {
         app.vue.followers_list = app.vue.follows
         app.vue.num_followers = app.vue.follows.length;
-        
+
         app.vue.following_list = app.vue.lfollowing;
         app.vue.num_following = app.vue.lfollowing.length;
     }
@@ -257,20 +318,52 @@ let init = (app) => {
 
     //Function for changing profile image
     app.upload_file = function (event) {
+        if (app.vue.user_info[0].picture) {
+            axios.post(obtain_gcs_url, {
+                action: "DELETE",
+                file_path: app.vue.user_info[0].file_path,
+            }).then(function (r) {
+                let delete_url = r.data.signed_url;
+                if (delete_url) {
+
+                    let req = new XMLHttpRequest();
+
+                    req.open("DELETE", delete_url);
+                    req.send();
+                };
+            });
+        };
+
         let input = event.target;
         let file = input.files[0];
         if (file) {
-            let reader = new FileReader();
-            reader.addEventListener("load", function () {
-                axios.post(upload_profilepic_url,
-                    {
-                        picture: reader.result,
-                        users_id: cur_user_id
-                    }).then(function () {
 
+            let file_type = file.type;
+            let file_name = file.name;
+
+            axios.post(obtain_gcs_url, {
+                action: "PUT",
+                mimetype: file_type,
+                file_name: file_name,
+            }).then((r) => {
+                let upload_url = r.data.signed_url;
+                let image_url = r.data.image_url;
+                let file_path = r.data.file_path;
+
+                let req = new XMLHttpRequest();
+
+                req.addEventListener("load", function () {
+                    axios.post(upload_profilepic_url, {
+                        picture: image_url,
+                        users_id: cur_user_id,
+                        file_path: file_path,
+                    }).then(function (r) {
+                        app.vue.user_info[0].picture = r.picture;
                     });
+                });
+                req.open("PUT", upload_url, true)
+                req.send(file);
             });
-            reader.readAsDataURL(file);
         }
         window.location.reload();
     }
@@ -303,7 +396,7 @@ let init = (app) => {
         else if (post._like === false & post._dislike === true) {
             axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
             Vue.set(post, '_like', true);
-            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
+            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
             Vue.set(post, '_lnum', post._lnum + 1)
             Vue.set(post, '_dnum', post._dnum - 1)
             Vue.set(post, '_dislike', false);
@@ -311,7 +404,7 @@ let init = (app) => {
         else if (post._like === false & post._dislike === false) {
             axios.post(load_likes_url, { post: post_id, like: true, dislike: false });
             Vue.set(post, '_like', true);
-            Vue.set(post, '_lname', [{name:cur_user_name, id:cur_user_id}]);
+            Vue.set(post, '_lname', [{ name: cur_user_name, id: cur_user_id }]);
             Vue.set(post, '_lnum', 1)
             Vue.set(post, '_dislike', false);
         }
@@ -330,7 +423,7 @@ let init = (app) => {
         else if (post._dislike === false & post._like === true) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
             Vue.set(post, '_dislike', true);
-            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
+            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
             Vue.set(post, '_dnum', post._dnum + 1)
             Vue.set(post, '_lnum', post._lnum - 1)
             Vue.set(post, '_like', false);
@@ -338,7 +431,7 @@ let init = (app) => {
         else if (post._dislike === false & post._like === false) {
             axios.post(load_likes_url, { post: post_id, like: false, dislike: true });
             Vue.set(post, '_dislike', true);
-            Vue.set(post, '_dname', [{name:cur_user_name, id:cur_user_id}])
+            Vue.set(post, '_dname', [{ name: cur_user_name, id: cur_user_id }])
             Vue.set(post, '_dnum', 1)
             Vue.set(post, '_like', false);
         }
@@ -451,7 +544,7 @@ let init = (app) => {
             let user_posts = response.data.rows;
             app.enumerate(user_posts);
             app.complete(user_posts);
-            
+
             let liked_posts = response.data.liked_posts;
             app.enumerate(liked_posts);
             app.complete(liked_posts);

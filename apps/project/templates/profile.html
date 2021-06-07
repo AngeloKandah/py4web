@@ -62,7 +62,7 @@
                             </span>
 
                             <span v-if="profile">
-                                <button @click="set_add_status(true)" class="button is-primary" style="float:right">
+                                <button @click="set_add_status(true, 'New')" class="button is-primary" style="float:right">
                                     <i class="fa fa-plus fa-fw" style="color:black"></i><span
                                         style="color:black">&nbsp;New Post</span>
                                 </button>
@@ -105,7 +105,7 @@
                                     <div class="tile">
                                         <input type="submit" @click="add_posts" value="Post" class="button is-primary">
                                         <div>&nbsp;</div>
-                                        <input type="submit" @click="set_add_status(false)" value="Cancel"
+                                        <input type="submit" @click="set_add_status(false, 'Cancel')" value="Cancel"
                                             class="button is-warning">
                                         <div>&nbsp;</div>
                                         <span class="file">
@@ -141,7 +141,7 @@
                                         <br>
                                         <span v-if="r.image.length>0">
                                             <span v-for="i in r.image">
-                                                <img :src="i">
+                                                <img :src="i.image">
                                             </span>
                                             <br>
                                         </span>
@@ -253,9 +253,7 @@
                     <div v-if="profile">
                         <div class="file">
                             <label class="file-label">
-                                <input class="file-input" type="file"
-                                    accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*"
-                                    @change="upload_file($event)">
+                                <input class="file-input" type="file" @change="upload_file($event)">
                                 <span class="file-cta">
                                     <span class="file-label">
                                         <span><i class="fa fa-upload"></i></span>
@@ -366,6 +364,8 @@
     let cur_user_name = "[[ =cur_user_name ]]";
     let cur_user_id = "[[ =cur_user_id ]]";
     let page_id = "[[ =page_id ]]";
+
+    let obtain_gcs_url = "[[=XML(obtain_gcs_url)]]";
 
 </script>
 <script src="js/profile.js"></script>
