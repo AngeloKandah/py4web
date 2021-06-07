@@ -87,6 +87,8 @@ def profile(users_id=None):
     assert users_id is not None
     user = db(db.users.user_email == get_user_email()).select().first()
     page = db(db.users.id == users_id).select().first()
+    if page is None:
+        redirect(URL('index'))
     return dict(
         url_signer=url_signer,
         user_info_url = URL('user_info', users_id, signer=url_signer),
@@ -100,8 +102,6 @@ def profile(users_id=None):
         add_comment_url = URL('add_comments',signer=url_signer),
         delete_comment_url = URL('delete_comments',signer=url_signer),
         upload_profilepic_url = URL('upload_profilepic', signer=url_signer),
-
-        dummy_like_url = URL('dummy_like', signer=url_signer),
 
         cur_user = get_user_email(),
         cur_user_name = user.first_name + " " + user.last_name,
@@ -483,7 +483,7 @@ def obtain_gcs():
         extension = os.path.splitext(file_name)[1]
         # Use + and not join for Windows, thanks Blayke Larue
         file_path = BUCKET + "/" + str(uuid.uuid1()) + extension
-        image_url = ("https://storage.cloud.google.com" + file_path + "?authuser=0")
+        image_url = ("https://storage.googleapis.com" + file_path)
         # Marks that the path may be used to upload a file.
         upload_url = gcs_url(GCS_KEYS, file_path, verb='PUT',
                              content_type=mimetype)
